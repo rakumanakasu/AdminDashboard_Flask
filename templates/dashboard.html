@@ -1,53 +1,75 @@
 {% extends "master.html" %}
 
 {% block main_content %}
-<div class="container mt-4">
-    <h2>Admin Dashboard - Products</h2>
-    <a href="{{ url_for('admin.add_product') }}" class="btn btn-success mb-3">Add New Product</a>
+<div id="app" class="container mt-4">
+  <h2>Admin Dashboard - Products</h2>
+  <a href="{{ url_for('admin.add_product') }}" class="btn btn-success mb-3">Add New Product</a>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Image</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="p in products" :key="p.id">
+        <td>[[ p.id ]]</td>
+        <td>[[ p.title ]]</td>
+        <td>[[ p.category ]]</td>
+        <td>$[[ p.price ]]</td>
+        <td>
+          <img v-if="p.image" :src="`/photos/${p.image}`" style="height:60px;">
+        </td>
+        <td>
+          <button class="btn btn-warning btn-sm" @click="editProduct(p)">Edit</button>
+          <button class="btn btn-danger btn-sm" @click="deleteProduct(p.id)">Delete</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-    <table class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Image</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in products %}
-           <tr>
-      <td>{{ p.id }}</td>
-      <td>{{ p.title }}</td>
-      <td>{{ p.category }}</td>
-      <td>${{ p.price }}</td>
-      <td>
-        {% if p.image %}
-          <img src="{{ url_for('shared_photos', filename=p.image) }}" alt="{{ p.title }}" style="height:60px;">
-        {% endif %}
-      </td>
-      <td>
-        <form action="{{ url_for('admin.delete_product', product_id=p.id) }}" method="post" onsubmit="return confirm('Are you sure?');">
-          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-        </form>
-      </td>
-    </tr>
-
-            {% endfor %}
-        </tbody>
-    </table>
+  <!-- Edit Modal -->
+  <div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form @submit.prevent="submitEdit" class="modal-content" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Product</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label>Title</label>
+            <input type="text" v-model="editForm.title" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label>Category</label>
+            <input type="text" v-model="editForm.category" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label>Price</label>
+            <input type="number" v-model="editForm.price" step="0.01" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label>Image</label>
+            <input type="file" @change="onImageChange" class="form-control">
+            <img v-if="editForm.imagePreview" :src="editForm.imagePreview" style="height:60px; margin-top:5px;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Save Changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- No extra scripts needed here; Vue logic is in master.html -->
 {% endblock %}
