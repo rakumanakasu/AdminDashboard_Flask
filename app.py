@@ -2,6 +2,7 @@
 
 from flask import Flask, flash
 from route.admin import admin_bp
+from flask_cors import CORS
 import os
 
 
@@ -11,6 +12,7 @@ from config import SHARED_PHOTO_FOLDER
 
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.getenv('SECRET_KEY', 'devsecretkey')
 
 # Register Blueprint
@@ -23,4 +25,4 @@ def shared_photos(filename):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False)
