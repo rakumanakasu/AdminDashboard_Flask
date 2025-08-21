@@ -1,10 +1,8 @@
 import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Absolute path to the shared SQLite database
+DB_PATH = "/data/site.db"
 
-# SQLite database (relative path)
-DB_PATH = os.path.join(BASE_DIR, "site.db")
-
-# Shared folder for images
-SHARED_PHOTO_FOLDER = os.path.join(BASE_DIR, "shared_photos")
+# Central shared folder for images
+SHARED_PHOTO_FOLDER = r"D:\Dara\PythonAPI\exam\shared_photos"
 os.makedirs(SHARED_PHOTO_FOLDER, exist_ok=True)
