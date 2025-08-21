@@ -23,7 +23,8 @@
         <td>[[ p.category ]]</td>
         <td>$[[ p.price ]]</td>
         <td>
-          <img v-if="p.image" :src="`/photos/${p.image}`" style="height:60px;">
+          <!-- Use ImageKit URL directly -->
+          <img v-if="p.image" :src="p.image" style="height:60px;">
         </td>
         <td>
           <button class="btn btn-warning btn-sm" @click="editProduct(p)">Edit</button>
@@ -57,7 +58,8 @@
           <div class="mb-2">
             <label>Image</label>
             <input type="file" @change="onImageChange" class="form-control">
-            <img v-if="editForm.imagePreview" :src="editForm.imagePreview" style="height:60px; margin-top:5px;">
+            <!-- Show current ImageKit URL -->
+            <img v-if="editForm.imagePreview || editForm.image" :src="editForm.imagePreview || editForm.image" style="height:60px; margin-top:5px;">
           </div>
         </div>
         <div class="modal-footer">
@@ -71,5 +73,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<!-- No extra scripts needed here; Vue logic is in master.html -->
+<!-- Your Vue logic in master.html should handle editProduct, deleteProduct, and image upload -->
 {% endblock %}

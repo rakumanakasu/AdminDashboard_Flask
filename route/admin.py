@@ -1,7 +1,9 @@
-import sqlite3
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from config import DB_PATH, SHARED_PHOTO_FOLDER
+import sqlite3
+from config import DB_PATH, IMAGEKIT_PUBLIC_KEY, IMAGEKIT_PRIVATE_KEY, IMAGEKIT_URL_ENDPOINT
+from werkzeug.utils import secure_filename
+from imagekitio import ImageKit
 
 admin_bp = Blueprint(
     'admin',
@@ -14,6 +16,12 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+# ImageKit setup
+imagekit = ImageKit(
+    public_key=IMAGEKIT_PUBLIC_KEY,
+    private_key=IMAGEKIT_PRIVATE_KEY,
+    url_endpoint=IMAGEKIT_URL_ENDPOINT
+)
 
 # ---------------- Dashboard ----------------
 @admin_bp.route('/')
@@ -28,7 +36,6 @@ def dashboard():
         flash(f"Database error: {e}", 'danger')
         return render_template('dashboard.html', products=[])
 
-
 # ---------------- Add Product ----------------
 @admin_bp.route('/product/add', methods=['GET', 'POST'])
 def add_product():
@@ -40,22 +47,28 @@ def add_product():
             category = request.form.get('category')
             image_file = request.files.get('image')
 
-            image_filename = None
+            image_url = None
             if image_file and image_file.filename != '':
-                from werkzeug.utils import secure_filename
-                image_filename = secure_filename(image_file.filename)
-                os.makedirs(SHARED_PHOTO_FOLDER, exist_ok=True)
-                image_file.save(os.path.join(SHARED_PHOTO_FOLDER, image_filename))
+                upload = imagekit.upload(
+                    file=image_file,
+                    file_name=secure_filename(image_file.filename),
+                    options={"folder": "/products/"}
+                )
+                if upload.get("error"):
+                    flash(f"Image upload error: {upload['error']['message']}", "danger")
+                    return render_template('admin/add_product.html')
+                image_url = upload['response']['url']
 
             conn = get_db_connection()
             conn.execute(
                 "INSERT INTO products (title, description, price, category, image) VALUES (?, ?, ?, ?, ?)",
-                (title, description, price, category, image_filename)
+                (title, description, price, category, image_url)
             )
             conn.commit()
             conn.close()
             flash('Product added successfully!', 'success')
             return redirect(url_for('admin.dashboard'))
+
         return render_template('admin/add_product.html')
     except Exception as e:
         import traceback
@@ -63,50 +76,16 @@ def add_product():
         flash(f"Error: {e}", "danger")
         return render_template('admin/add_product.html')
 
-
-
 # ---------------- Edit Product via AJAX ----------------
 @admin_bp.route('/product/edit', methods=['POST'])
 def edit_product_ajax():
-    product_id = int(request.form['product_id'])
-    title = request.form['title']
-    category = request.form['category']
-    price = float(request.form['price'])
-    image_file = request.files.get('image')
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT image FROM products WHERE id=?", (product_id,))
-    product = cur.fetchone()
-
-    if not product:
-        conn.close()
-        return jsonify({"status": "error", "message": "Product not found"}), 404
-
-    image_filename = product['image']
-    if image_file and image_file.filename != '':
-        # Delete old image
-        if image_filename:
-            old_path = os.path.join(SHARED_PHOTO_FOLDER, image_filename)
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        # Save new image
-        image_filename = image_file.filename
-        image_file.save(os.path.join(SHARED_PHOTO_FOLDER, image_filename))
-
-    cur.execute(
-        "UPDATE products SET title=?, category=?, price=?, image=? WHERE id=?",
-        (title, category, price, image_filename, product_id)
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success", "message": "Product updated successfully"})
-
-
-# ---------------- Delete Product via AJAX ----------------
-@admin_bp.route('/product/delete/<int:product_id>', methods=['POST'])
-def delete_product(product_id):
     try:
+        product_id = int(request.form['product_id'])
+        title = request.form['title']
+        category = request.form['category']
+        price = float(request.form['price'])
+        image_file = request.files.get('image')
+
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("SELECT image FROM products WHERE id=?", (product_id,))
@@ -116,11 +95,48 @@ def delete_product(product_id):
             conn.close()
             return jsonify({"status": "error", "message": "Product not found"}), 404
 
-        image_filename = product['image']
-        if image_filename:
-            image_path = os.path.join(SHARED_PHOTO_FOLDER, image_filename)
-            if os.path.exists(image_path):
-                os.remove(image_path)
+        image_url = product['image']
+
+        if image_file and image_file.filename != '':
+            upload = imagekit.upload(
+                file=image_file,
+                file_name=secure_filename(image_file.filename),
+                options={"folder": "/products/"}
+            )
+            if upload.get("error"):
+                return jsonify({"status": "error", "message": upload["error"]["message"]}), 400
+            image_url = upload['response']['url']
+
+        cur.execute(
+            "UPDATE products SET title=?, category=?, price=?, image=? WHERE id=?",
+            (title, category, price, image_url, product_id)
+        )
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "message": "Product updated successfully",
+            "image_url": image_url
+        })
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ---------------- Delete Product via AJAX ----------------
+@admin_bp.route('/product/delete/<int:product_id>', methods=['POST'])
+def delete_product(product_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM products WHERE id=?", (product_id,))
+        product = cur.fetchone()
+
+        if not product:
+            conn.close()
+            return jsonify({"status": "error", "message": "Product not found"}), 404
 
         cur.execute("DELETE FROM products WHERE id=?", (product_id,))
         conn.commit()

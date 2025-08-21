@@ -7,14 +7,14 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
     CREATE TABLE IF NOT EXISTS products (
-         id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT,
-    price REAL NOT NULL,
-    image TEXT,
-    category TEXT,
-    rating_rate REAL DEFAULT 0,   
-    rating_count INTEGER DEFAULT 0  
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        price REAL NOT NULL,
+        image TEXT,
+        category TEXT,
+        rating_rate REAL DEFAULT 0,
+        rating_count INTEGER DEFAULT 0
     )
     """)
     conn.commit()
