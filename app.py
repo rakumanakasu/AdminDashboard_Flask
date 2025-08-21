@@ -1,10 +1,7 @@
-from flask import Flask, flash,request
-from route.admin import admin_bp
+from flask import Flask, flash, request, send_from_directory
 from flask_cors import CORS
 import os
-from db_init import init_db
-
-from flask import send_from_directory
+from db_init import init_db   # init_db BEFORE importing admin_bp
 from config import SHARED_PHOTO_FOLDER
 
 
@@ -20,6 +17,7 @@ init_db()
 
 
 # Register Blueprint
+from route.admin import admin_bp
 app.register_blueprint(admin_bp)
 
 @app.route('/photos/<filename>')

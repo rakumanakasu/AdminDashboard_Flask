@@ -19,3 +19,5 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+
+print(f"Initializing DB at: {DB_PATH}")
