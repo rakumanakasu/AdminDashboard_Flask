@@ -32,6 +32,7 @@ Installation
 
 # Clone the repository
 git clone https://github.com/rakumanakasu/AdminDashboard_Flask.git
+
 cd AdminDashboard_Flask
 
 # Create virtual environment
