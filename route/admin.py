@@ -24,6 +24,16 @@ def get_db_connection():
         cursorclass=pymysql.cursors.DictCursor
     )
 
+
+@admin_bp.route("/api/products")
+def api_products():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products")
+    products = cursor.fetchall()
+    conn.close()
+    return jsonify(products)
+
 # ---------------- Dashboard ----------------
 @admin_bp.route('/')
 def dashboard():
