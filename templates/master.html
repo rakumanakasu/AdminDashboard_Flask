@@ -111,7 +111,9 @@
         description: '',
         image: null,
         imagePreview: null
-      }
+      },
+         image: null,         // <-- add this
+    imagePreview: null   // <-- add this
     }
   },
   methods: {
@@ -128,32 +130,43 @@
       this.editForm.image = e.target.files[0];
       this.editForm.imagePreview = URL.createObjectURL(this.editForm.image);
     },
-    submitEdit() {
-      const formData = new FormData();
-      formData.append('product_id', this.editForm.id);
-      formData.append('title', this.editForm.title);
-      formData.append('category', this.editForm.category);
-      formData.append('price', this.editForm.price);
-      if(this.editForm.image) formData.append('image', this.editForm.image);
+  submitEdit() {
+    if (!this.editForm.id) {
+        Swal.fire('Error!', 'Invalid product selected', 'error');
+        return;
+    }
 
-      fetch('/product/edit', { method: 'POST', body: formData })
+    const formData = new FormData();
+    formData.append('product_id', this.editForm.id);
+    formData.append('title', this.editForm.title);
+    formData.append('category', this.editForm.category);
+    formData.append('price', this.editForm.price);
+
+    if(this.editForm.image) formData.append('image', this.editForm.image);
+
+    fetch('/product/edit', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
-          if(data.status === 'success'){
-            Swal.fire('Updated!', data.message, 'success');
-            const index = this.products.findIndex(p => p.id === this.editForm.id);
-            if(index !== -1){
-              // Update the product in the list
-              this.products[index] = {...this.editForm};
-              if(this.editForm.image) this.products[index].image = data.image_url || this.editForm.imagePreview;
+            if(data.status === 'success'){
+                Swal.fire('Updated!', data.message, 'success');
+
+                // Update product in Vue list
+                const index = this.products.findIndex(p => p.id === this.editForm.id);
+                if(index !== -1){
+                    this.products[index].title = this.editForm.title;
+                    this.products[index].category = this.editForm.category;
+                    this.products[index].price = this.editForm.price;
+                    if(data.image_url) this.products[index].image = data.image_url;
+                }
+
+                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            } else {
+                Swal.fire('Error!', data.message, 'error');
             }
-            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-          } else {
-            Swal.fire('Error!', data.message, 'error');
-          }
         })
         .catch(() => Swal.fire('Error!', 'Something went wrong', 'error'));
-    },
+}
+,
     deleteProduct(id) {
       Swal.fire({
         title: 'Are you sure?',

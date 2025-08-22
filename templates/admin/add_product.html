@@ -20,10 +20,12 @@
     <label>Category</label>
     <input type="text" name="category" class="form-control">
   </div>
-  <div class="mb-3">
-    <label>Image</label>
-    <input type="file" name="image" class="form-control">
-  </div>
+<div class="mb-3">
+  <label>Image</label>
+  <input type="file" name="image" class="form-control" @change="onImageChange">
+  <img v-if="imagePreview" :src="imagePreview" style="height:60px; margin-top:5px;">
+</div>
+
   <button type="submit" class="btn btn-primary">Add Product</button>
 </form>
 {% endblock %}

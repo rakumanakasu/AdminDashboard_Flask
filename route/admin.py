@@ -11,12 +11,13 @@ admin_bp = Blueprint(
     template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '../templates'),
 )
 
+# ---------------- DB Connection ----------------
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
-# ImageKit setup
+# ---------------- ImageKit ----------------
 imagekit = ImageKit(
     public_key=IMAGEKIT_PUBLIC_KEY,
     private_key=IMAGEKIT_PRIVATE_KEY,
@@ -37,53 +38,69 @@ def dashboard():
         return render_template('dashboard.html', products=[])
 
 # ---------------- Add Product ----------------
-@admin_bp.route('/product/add', methods=['GET', 'POST'])
+@admin_bp.route("/add", methods=["GET", "POST"])
 def add_product():
-    try:
-        if request.method == 'POST':
-            title = request.form.get('title')
-            description = request.form.get('description')
-            price = float(request.form.get('price'))
-            category = request.form.get('category')
-            image_file = request.files.get('image')
+    if request.method == "POST":
+        title = request.form.get("title")
+        description = request.form.get("description")
+        price = request.form.get("price")
+        category = request.form.get("category")
+        image_file = request.files.get("image")
 
-            image_url = None
-            if image_file and image_file.filename != '':
+        image_url = None
+
+        if image_file and image_file.filename != "":
+            try:
                 upload = imagekit.upload(
                     file=image_file,
                     file_name=secure_filename(image_file.filename),
                     options={"folder": "/products/"}
                 )
+                upload = dict(upload)  # ensure plain dict
                 if upload.get("error"):
-                    flash(f"Image upload error: {upload['error']['message']}", "danger")
-                    return render_template('admin/add_product.html')
-                image_url = upload['response']['url']
+                    flash(f"Image upload failed: {upload['error']['message']}", "danger")
+                    return redirect(url_for("admin.add_product"))
 
-            conn = get_db_connection()
-            conn.execute(
-                "INSERT INTO products (title, description, price, category, image) VALUES (?, ?, ?, ?, ?)",
-                (title, description, price, category, image_url)
-            )
-            conn.commit()
-            conn.close()
-            flash('Product added successfully!', 'success')
-            return redirect(url_for('admin.dashboard'))
+                image_url = upload.get("response", {}).get("url")
 
-        return render_template('admin/add_product.html')
-    except Exception as e:
-        import traceback
-        print(traceback.format_exc())
-        flash(f"Error: {e}", "danger")
-        return render_template('admin/add_product.html')
+            except Exception as e:
+                flash(f"Upload error: {str(e)}", "danger")
+                return redirect(url_for("admin.add_product"))
+
+        # Save to database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO products (title, description, price, category, image) VALUES (?, ?, ?, ?, ?)",
+            (title, description, price, category, image_url)
+        )
+        conn.commit()
+        conn.close()
+
+        flash("Product added successfully!", "success")
+        return redirect(url_for("admin.dashboard"))
+
+    return render_template("admin/add_product.html")
 
 # ---------------- Edit Product via AJAX ----------------
 @admin_bp.route('/product/edit', methods=['POST'])
 def edit_product_ajax():
     try:
-        product_id = int(request.form['product_id'])
-        title = request.form['title']
-        category = request.form['category']
-        price = float(request.form['price'])
+        # Validate input
+        product_id = request.form.get('product_id')
+        title = request.form.get('title')
+        category = request.form.get('category')
+        price = request.form.get('price')
+
+        if not all([product_id, title, category, price]):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        try:
+            product_id = int(product_id)
+            price = float(price)
+        except ValueError:
+            return jsonify({"status": "error", "message": "Invalid product ID or price"}), 400
+
         image_file = request.files.get('image')
 
         conn = get_db_connection()
@@ -95,18 +112,24 @@ def edit_product_ajax():
             conn.close()
             return jsonify({"status": "error", "message": "Product not found"}), 404
 
-        image_url = product['image']
+        image_url = product['image']  # existing image
 
+        # Upload new image if provided
         if image_file and image_file.filename != '':
-            upload = imagekit.upload(
-                file=image_file,
-                file_name=secure_filename(image_file.filename),
-                options={"folder": "/products/"}
-            )
-            if upload.get("error"):
-                return jsonify({"status": "error", "message": upload["error"]["message"]}), 400
-            image_url = upload['response']['url']
+            try:
+                upload = imagekit.upload(
+                    file=image_file,
+                    file_name=secure_filename(image_file.filename),
+                    options={"folder": "/products/"}
+                )
+                if getattr(upload, 'error', None):
+                    return jsonify({"status": "error", "message": upload.error.message}), 400
 
+                image_url = upload.get('response', {}).get('url', image_url)
+            except Exception as e:
+                return jsonify({"status": "error", "message": f"Image upload failed: {str(e)}"}), 500
+
+        # Update database
         cur.execute(
             "UPDATE products SET title=?, category=?, price=?, image=? WHERE id=?",
             (title, category, price, image_url, product_id)
@@ -123,7 +146,7 @@ def edit_product_ajax():
     except Exception as e:
         import traceback
         print(traceback.format_exc())
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
 # ---------------- Delete Product via AJAX ----------------
 @admin_bp.route('/product/delete/<int:product_id>', methods=['POST'])

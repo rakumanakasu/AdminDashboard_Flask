@@ -1,8 +1,9 @@
 import os
 
 # Absolute path to the shared SQLite database
-DB_PATH = os.getenv("DB_PATH", "/data/site.db")
+# DB_PATH = os.getenv("DB_PATH", "/data/site.db")
 
+DB_PATH = r"D:\Dara\PythonAPI\exam\AdminDashboard_Flask\site.db"
 
 
 UPLOAD_FOLDER = os.getenv("SHARED_PHOTO_FOLDER", "/mnt/volume/photos")

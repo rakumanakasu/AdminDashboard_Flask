@@ -31,31 +31,37 @@ def upload():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
-    file = request.files["file"]
+    image_file = request.files["file"]
 
-    upload = imagekit.upload(
-        file=file,
-        file_name=secure_filename(file.filename),
-        options={"folder": "/products/"}
-    )
+    try:
+        upload = imagekit.upload(
+            file=image_file,
+            file_name=secure_filename(image_file.filename),
+            options={"folder": "/products/"}  # ✅ correct for v4.1.0
+        )
 
-    if upload.get("error"):
-        return jsonify({"error": upload["error"]["message"]}), 400
 
-    return jsonify({
-        "name": upload["response"]["name"],
-        "url": upload["response"]["url"],
-        "thumbnail_url": upload["response"]["thumbnailUrl"]
-    })
+        if upload.get("error"):
+            return jsonify({"error": upload["error"]["message"]}), 400
+
+        return jsonify({
+            "name": upload["response"]["name"],
+            "url": upload["response"]["url"],
+            "thumbnail_url": upload["response"].get("thumbnailUrl")
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # --- Resize / optimize URL ---
 @app.route("/resize/<path:image_path>")
 def resize(image_path):
-    url = imagekit.url({
-        "path": f"/products/{image_path}",
-        "transformation": [{"height": 300, "width": 300}]
-    })
+    url = imagekit.url(
+        path=f"/products/{image_path}",
+        transformation=[{"height": 300, "width": 300}]
+    )
     return jsonify({"optimized_url": url})
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
