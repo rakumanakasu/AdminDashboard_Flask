@@ -54,14 +54,15 @@ def add_product():
                 upload = imagekit.upload(
                     file=image_file,
                     file_name=secure_filename(image_file.filename),
-                    options={"folder": "/products/"}
+                    options={"folder": "/products/"}  # correct for v4.1.0
                 )
-                upload = dict(upload)  # ensure plain dict
+                print("UPLOAD RESULT:", upload)
+
                 if upload.get("error"):
                     flash(f"Image upload failed: {upload['error']['message']}", "danger")
                     return redirect(url_for("admin.add_product"))
 
-                image_url = upload.get("response", {}).get("url")
+                image_url = upload["response"].get("url")
 
             except Exception as e:
                 flash(f"Upload error: {str(e)}", "danger")
