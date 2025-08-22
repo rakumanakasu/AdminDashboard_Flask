@@ -6,7 +6,7 @@ from route.admin import admin_bp
 from config import UPLOAD_FOLDER
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 app.secret_key = os.getenv("SECRET_KEY", "devsecretkey")
 
 # Initialize DB
