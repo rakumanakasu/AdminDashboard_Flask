@@ -31,7 +31,7 @@ Deployment: Works on Railway / Render / Localhost
 Installation
 
 # Clone the repository
-git clone https://github.com/yourusername/AdminDashboard_Flask.git
+git clone https://github.com/rakumanakasu/AdminDashboard_Flask.git
 cd AdminDashboard_Flask
 
 # Create virtual environment
