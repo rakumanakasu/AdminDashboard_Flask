@@ -6,7 +6,8 @@ DB_PATH = os.getenv("DB_PATH", "/data/site.db")
 # DB_PATH = r"D:\Dara\PythonAPI\exam\AdminDashboard_Flask\site.db"
 
 
-UPLOAD_FOLDER = os.getenv("SHARED_PHOTO_FOLDER", "/mnt/volume/photos")
+# UPLOAD_FOLDER = os.getenv("SHARED_PHOTO_FOLDER", "/mnt/volume/photos")
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
