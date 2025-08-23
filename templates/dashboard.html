@@ -24,9 +24,10 @@
         <td>$[[ p.price ]]</td>
        <td><img v-if="p.image" :src="p.image" style="height:60px;"></td>
         <td>
-          <button class="btn btn-warning btn-sm" @click="editProduct(p)">Edit</button>
-          <button class="btn btn-danger btn-sm" @click="deleteProduct(p.id)">Delete</button>
-        </td>
+  <button class="btn btn-warning btn-sm me-1" @click="editProduct(p)">Edit</button>
+  <button class="btn btn-danger btn-sm" @click="deleteProduct(p.id)">Delete</button>
+</td>
+
       </tr>
     </tbody>
   </table>
