@@ -88,6 +88,7 @@ def edit_product():
     product_id = request.form.get("product_id")
     title = request.form.get("title")
     category = request.form.get("category")
+    description = request.form.get("description")
     price = request.form.get("price")
     image_file = request.files.get("image")
 
@@ -119,8 +120,8 @@ def edit_product():
 
         # Update DB
         cur.execute(
-            "UPDATE products SET title=%s, category=%s, price=%s, image=%s WHERE id=%s",
-            (title, category, price, image_url, product_id)
+            "UPDATE products SET title=%s, category=%s, description=%s, price=%s, image=%s WHERE id=%s",
+            (title, category, description, price, image_url, product_id)
         )
     conn.commit()
     conn.close()
